@@ -1,0 +1,11 @@
+# 忽略单个文件
+test.py
+
+# 忽略某个目录
+logs/build
+logs/.DS_Store
+logs/.venv
+logs/.idea
+
+# 忽略某种文件类型
+*.log
