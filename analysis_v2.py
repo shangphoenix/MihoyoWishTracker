@@ -8,6 +8,8 @@ from tkinter import filedialog
 # 打包命令
 # pyinstaller --onefile --windowed --icon=MiHoYo_Logo.ico --name=MihoyoWishTracker analysis_v2.py --clean
 
+# test
+
 # 默认安装路径
 DEFAULT_PATHS = {
     '原神': r'F:\MIHOYO\Genshin Impact\Genshin Impact Game',
