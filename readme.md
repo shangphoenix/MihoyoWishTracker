@@ -1,0 +1,1 @@
+MihoyoWishTracker is a powerful tool designed to assist players of Mihoyo's popular games, including Genshin Impact, Honkai: Star Rail, and Zenless Zone Zero. This application enables users to effortlessly extract, analyze, and visualize their wish data from the games' gacha systems.
