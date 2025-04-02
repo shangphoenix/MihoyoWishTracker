@@ -177,7 +177,7 @@ def getString(folder, start_str, end_str):
 # 创建主窗口
 root = tk.Tk()
 root.title('米哈游抽卡链接获取V1.1 by彩虹糖')
-root.iconbitmap(os.path.join(sys._MEIPASS, 'image.ico'))
+# root.iconbitmap(os.path.join(sys._MEIPASS, 'image.ico'))
 root.geometry('480x520')
 
 # 创建第一行的框架用于放置单选框

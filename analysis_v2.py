@@ -7,7 +7,7 @@ from tkinter import filedialog
 
 # 打包命令
 # pyinstaller --onefile --windowed --icon=MiHoYo_Logo.ico --name=MihoyoWishTracker analysis_v2.py --clean
-
+# test
 
 # 默认安装路径
 DEFAULT_PATHS = {
@@ -63,7 +63,7 @@ def get_link():
         elif game == '崩坏:星穹铁道':
             cache_folder = os.path.join(folder, r'StarRail_Data\webCaches')
             start_str = 'https://webstatic.mihoyo.com'
-            end_str = 'plat_type=pc'
+            end_str = ' '
         elif game == '绝区零':
             cache_folder = os.path.join(folder, r'ZenlessZoneZero_Data\webCaches')
             start_str = 'https://public-operation-nap.mihoyo.com'
