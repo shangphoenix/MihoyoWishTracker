@@ -9,3 +9,5 @@ logs/.idea
 
 # 忽略某种文件类型
 *.log
+/.idea
+/build/
