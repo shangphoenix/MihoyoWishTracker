@@ -1,6 +1,6 @@
 import os
 import re
-import win32file
+import shutil
 import pyperclip
 import tkinter as tk
 from tkinter import filedialog
@@ -11,9 +11,9 @@ from tkinter import filedialog
 
 # 默认安装路径
 DEFAULT_PATHS = {
-    '原神': r'F:\MIHOYO\Genshin Impact\Genshin Impact Game',
-    '崩坏:星穹铁道': r'F:\MIHOYO\Star Rail\Game',
-    '绝区零': r'F:\MIHOYO\ZenlessZoneZero Game'
+    '原神': r'D:\MIHOYO\Genshin Impact\Genshin Impact Game',
+    '崩坏:星穹铁道': r'D:\MIHOYO\Star Rail\Game',
+    '绝区零': r'D:\MIHOYO\ZenlessZoneZero Game'
 }
 
 # 当前游戏路径
@@ -75,7 +75,7 @@ def get_link():
         if not version_folder:
             return f"{game} 缓存文件夹版本不存在"
 
-        data_folder = os.path.join(cache_folder, version_folder, 'Cache\Cache_Data')
+        data_folder = os.path.join(cache_folder, version_folder, 'Cache\\Cache_Data')
         return f"{game} 抽卡链接(已复制到剪贴板): {get_string(data_folder, start_str, end_str)}"
 
     except Exception as e:
@@ -110,7 +110,7 @@ def get_string(folder, start_str, end_str):
         if not os.path.exists(data_file):
             return "缓存文件 data_2 不存在"
 
-        win32file.CopyFile(data_file, copy_file, True)
+        shutil.copy2(data_file, copy_file)
 
         with open(copy_file, 'r', encoding='ISO-8859-1') as file:
             content = file.read()
