@@ -6,7 +6,7 @@ import tkinter as tk
 from tkinter import filedialog
 
 # 打包命令
-# pyinstaller --onefile --windowed --icon=MiHoYo_Logo.ico --name=MihoyoWishTracker analysis_v2.py --clean
+# pyinstaller --onefile --windowed --icon=MiHoYo_Logo.ico --name=MihoyoWishTracker wishTracker.py --clean
 # test
 
 # 默认安装路径
