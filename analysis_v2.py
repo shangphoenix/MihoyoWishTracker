@@ -63,7 +63,7 @@ def get_link():
         elif game == '崩坏:星穹铁道':
             cache_folder = os.path.join(folder, r'StarRail_Data\webCaches')
             start_str = 'https://webstatic.mihoyo.com'
-            end_str = ' '
+            end_str = 'game_biz=hkrpg_cn'
         elif game == '绝区零':
             cache_folder = os.path.join(folder, r'ZenlessZoneZero_Data\webCaches')
             start_str = 'https://public-operation-nap.mihoyo.com'
