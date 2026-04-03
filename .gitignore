@@ -1,20 +1,25 @@
 # 忽略单个文件
 test.py
+user_config.json
 
 # 忽略某个目录
-logs/build
-logs/.DS_Store
-logs/.venv
-logs/.idea
+logs/
+build/
+dist/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
 
 # 忽略某种文件类型
 *.log
-/.idea
-/build/
-.idea
-/dist
-
-# 忽略所有的 .DS_Store 文件
-.DS_Store
-
 *.spec
+
+# IDE
+.idea/
+
+# macOS
+.DS_Store

@@ -1,180 +1,125 @@
-import os
-import re
-import shutil
-import pyperclip
+import logging
+import threading
 import tkinter as tk
 from tkinter import filedialog
 
+import pyperclip
+
+from config import GAME_CONFIG, load_user_paths, save_user_paths
+from core import extract_wish_link
+
 # 打包命令
-# pyinstaller --onefile --windowed --icon=MiHoYo_Logo.ico --name=MihoyoWishTracker wishTracker.py --clean
+# pyinstaller --onefile --windowed --icon=MiHoYo_Logo.ico --name=MihoyoWishTracker wishTracker.py --clean --hidden-import=config --hidden-import=core
 # 不依赖PATH的打包命令
-# python -m PyInstaller --onefile --windowed --icon=MiHoYo_Logo.ico --name=MihoyoWishTracker wishTracker.py --clean
+# python -m PyInstaller --onefile --windowed --icon=MiHoYo_Logo.ico --name=MihoyoWishTracker wishTracker.py --clean --hidden-import=config --hidden-import=core
 
-# 默认安装路径
-DEFAULT_PATHS = {
-    '原神': r'D:\MIHOYO\Genshin Impact\Genshin Impact Game',
-    '崩坏:星穹铁道': r'D:\MIHOYO\Star Rail\Game',
-    '绝区零': r'D:\MIHOYO\ZenlessZoneZero Game'
-}
-
-# 当前游戏路径
-current_paths = DEFAULT_PATHS.copy()
-
-
-def select_folder():
-    folder = filedialog.askdirectory()
-    if folder:
-        current_paths[select_option.get()] = folder
-    update_folder_label()
+# 日志配置
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+    handlers=[
+        logging.FileHandler('wishTracker.log', encoding='utf-8'),
+    ],
+)
+logger = logging.getLogger(__name__)
 
 
-def reset_folder():
-    game = select_option.get()
-    current_paths[game] = DEFAULT_PATHS[game]
-    update_folder_label()
+class App:
+    def __init__(self, root: tk.Tk):
+        self.root = root
+        self.root.title('原神/崩坏:星穹铁道/绝区零 抽卡链接获取工具')
+        self.root.minsize(500, 300)
 
+        self.games = list(GAME_CONFIG.keys())
+        self.current_paths = load_user_paths()
+        self.select_option = tk.StringVar(value=self.games[0])
 
-def update_folder_label():
-    game = select_option.get()
-    folder_label.config(text=current_paths.get(game, '未选择'))
+        self._build_ui()
 
+    def _build_ui(self):
+        # 游戏选择
+        frame1 = tk.Frame(self.root)
+        frame1.pack(pady=10)
+        for game in self.games:
+            rb = tk.Radiobutton(
+                frame1, text=game,
+                variable=self.select_option, value=game,
+                command=self._update_folder_label,
+            )
+            rb.pack(side=tk.LEFT, padx=10)
 
-def get_install_path():
-    return r'F:\MIHOYO'
+        # 操作按钮
+        frame2 = tk.Frame(self.root)
+        frame2.pack(pady=10)
 
+        tk.Button(frame2, text='选择游戏路径', command=self._select_folder).pack(side=tk.LEFT, padx=10)
+        tk.Button(frame2, text='恢复默认路径', command=self._reset_folder).pack(side=tk.LEFT, padx=10)
+        self.fetch_button = tk.Button(frame2, text='获取抽卡链接', command=self._fetch_link)
+        self.fetch_button.pack(side=tk.LEFT, padx=10)
 
-def update_result_text():
-    result = get_link()
-    result_text.delete('1.0', tk.END)
-    result_text.insert('1.0', result)
+        # 路径显示
+        frame3 = tk.Frame(self.root)
+        frame3.pack(pady=10)
+        self.folder_label = tk.Label(frame3, text=self.current_paths.get(self.games[0], '未选择'))
+        self.folder_label.pack(pady=10)
 
+        # 结果输出
+        frame4 = tk.Frame(self.root)
+        frame4.pack(pady=10, fill=tk.BOTH, expand=True)
+        self.result_text = tk.Text(frame4, height=20, wrap=tk.WORD)
+        self.result_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.result_text.insert('1.0', '如路径有误，请选择正确的游戏路径或恢复默认路径。')
 
-def get_link():
-    game = select_option.get()
-    folder = current_paths.get(game)
+    def _current_game(self) -> str:
+        return self.select_option.get()
 
-    if not folder or not os.path.exists(folder):
-        return f"{game} 路径不存在，请检查设置"
+    def _select_folder(self):
+        folder = filedialog.askdirectory()
+        if folder:
+            game = self._current_game()
+            self.current_paths[game] = folder
+            save_user_paths(self.current_paths)
+            self._update_folder_label()
 
-    try:
-        if game == '原神':
-            cache_folder = os.path.join(folder, r'YuanShen_Data\webCaches')
-            start_str = 'https://webstatic.mihoyo.com'
-            end_str = 'game_biz=hk4e_cn'
-        elif game == '崩坏:星穹铁道':
-            cache_folder = os.path.join(folder, r'StarRail_Data\webCaches')
-            start_str = 'https://webstatic.mihoyo.com'
-            end_str = 'game_biz=hkrpg_cn'
-        elif game == '绝区零':
-            cache_folder = os.path.join(folder, r'ZenlessZoneZero_Data\webCaches')
-            start_str = 'https://public-operation-nap.mihoyo.com'
-            end_str = 'game_biz=nap_cn'
+    def _reset_folder(self):
+        game = self._current_game()
+        self.current_paths[game] = GAME_CONFIG[game]['default_path']
+        save_user_paths(self.current_paths)
+        self._update_folder_label()
+
+    def _update_folder_label(self):
+        game = self._current_game()
+        self.folder_label.config(text=self.current_paths.get(game, '未选择'))
+
+    def _fetch_link(self):
+        """在后台线程中提取抽卡链接，避免 UI 假死。"""
+        game = self._current_game()
+        folder = self.current_paths.get(game, '')
+
+        self.fetch_button.config(state=tk.DISABLED, text='获取中...')
+        self.result_text.delete('1.0', tk.END)
+        self.result_text.insert('1.0', f'正在获取 {game} 的抽卡链接，请稍候...')
+
+        def _worker():
+            result = extract_wish_link(game, folder)
+            self.root.after(0, lambda: self._on_fetch_done(game, result))
+
+        threading.Thread(target=_worker, daemon=True).start()
+
+    def _on_fetch_done(self, game: str, result: str):
+        self.fetch_button.config(state=tk.NORMAL, text='获取抽卡链接')
+        self.result_text.delete('1.0', tk.END)
+
+        if result.startswith('错误:'):
+            self.result_text.insert('1.0', f'{game}: {result}')
+            logger.warning("%s: %s", game, result)
         else:
-            return "未选择游戏"
-
-        version_folder = get_version(cache_folder)
-        if not version_folder:
-            return f"{game} 缓存文件夹版本不存在"
-
-        data_folder = os.path.join(cache_folder, version_folder, 'Cache\\Cache_Data')
-        return f"{game} 抽卡链接(已复制到剪贴板): {get_string(data_folder, start_str, end_str)}"
-
-    except Exception as e:
-        return f"{game} 获取抽卡链接失败: {e}"
+            pyperclip.copy(result)
+            self.result_text.insert('1.0', f'{game} 抽卡链接(已复制到剪贴板):\n{result}')
+            logger.info("%s: 成功获取抽卡链接", game)
 
 
-def get_version(folder):
-    try:
-        folders = [f for f in os.listdir(folder) if os.path.isdir(os.path.join(folder, f))]
-        max_version = [0, 0, 0, 0]
-        max_folder = None
-
-        for dir_name in folders:
-            match = re.match(r'(\d+\.\d+\.\d+\.\d+)', dir_name)
-            if match:
-                version = list(map(int, match.group(1).split('.')))
-                if version > max_version:
-                    max_version = version
-                    max_folder = dir_name
-
-        return max_folder
-    except Exception as e:
-        print(f"版本解析失败: {e}")
-        return None
-
-
-def get_string(folder, start_str, end_str):
-    try:
-        data_file = os.path.join(folder, 'data_2')
-        copy_file = os.path.join(folder, 'data_2_copy')
-
-        if not os.path.exists(data_file):
-            return "缓存文件 data_2 不存在"
-
-        shutil.copy2(data_file, copy_file)
-
-        with open(copy_file, 'r', encoding='ISO-8859-1') as file:
-            content = file.read()
-
-        matches = re.findall(f'{start_str}.*?{end_str}', content)
-
-        os.remove(copy_file)
-
-        if matches:
-            pyperclip.copy(matches[-1])
-            return matches[-1]
-        else:
-            return "未找到抽卡链接"
-
-    except Exception as e:
-        return f"解析缓存文件失败: {e}"
-
-
-# 创建主窗口
-root = tk.Tk()
-root.title('原神/崩坏:星穹铁道/绝区零 抽卡链接获取工具')
-
-# 游戏选项
-options = ['原神', '崩坏:星穹铁道', '绝区零']
-select_option = tk.StringVar(value='原神')
-
-# 创建单选框
-frame1 = tk.Frame(root)
-frame1.pack(pady=10)
-
-for option in options:
-    radio_button = tk.Radiobutton(frame1, text=option, variable=select_option, value=option,
-                                  command=update_folder_label)
-    radio_button.pack(side=tk.LEFT, padx=10)
-
-# 创建操作按钮
-frame2 = tk.Frame(root)
-frame2.pack(pady=10)
-
-browse_button = tk.Button(frame2, text='选择游戏路径', command=select_folder)
-browse_button.pack(side=tk.LEFT, padx=10)
-
-reset_button = tk.Button(frame2, text='恢复默认路径', command=reset_folder)
-reset_button.pack(side=tk.LEFT, padx=10)
-
-process_button = tk.Button(frame2, text='获取抽卡链接', command=update_result_text)
-process_button.pack(side=tk.LEFT, padx=10)
-
-# 文件夹路径显示
-frame3 = tk.Frame(root)
-frame3.pack(pady=10)
-
-folder_label = tk.Label(frame3, text=current_paths['原神'])
-folder_label.pack(pady=10)
-
-# 输出结果框
-frame4 = tk.Frame(root)
-frame4.pack(pady=10, fill=tk.BOTH, expand=True)
-
-result_text = tk.Text(frame4, height=20, wrap=tk.WORD)
-result_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
-result_text.insert('1.0', '如路径有误，请选择正确的游戏路径或恢复默认路径。')
-
-# 运行主循环
-root.mainloop()
+if __name__ == '__main__':
+    root = tk.Tk()
+    App(root)
+    root.mainloop()
