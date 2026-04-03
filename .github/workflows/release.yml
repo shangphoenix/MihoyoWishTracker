@@ -1,0 +1,32 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install pyperclip pyinstaller
+
+      - name: Build executable
+        run: python -m PyInstaller --onefile --windowed --icon=MiHoYo_Logo.ico --name=MihoyoWishTracker wishTracker.py --clean --hidden-import=config --hidden-import=core
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/MihoyoWishTracker.exe
+          generate_release_notes: true
